@@ -1,12 +1,12 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSsoOkta\Test\Unit;
+namespace DmLab\AdminSsoOkta\Test\Unit;
 
-use MageDevGroup\AdminSsoOkta\Model\Config;
+use DmLab\AdminSsoOkta\Model\Config;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -31,7 +31,7 @@ class SystemConfigTest extends TestCase
     public function testOktaGroupLivesUnderAdminSsoSection(): void
     {
         $groups = $this->xpath->query(
-            "/config/system/section[@id='magedevgroup_admin_sso']/group[@id='okta']"
+            "/config/system/section[@id='dmlab_admin_sso']/group[@id='okta']"
         );
 
         self::assertNotNull($groups);
@@ -56,7 +56,7 @@ class SystemConfigTest extends TestCase
     public function testOktaGroupDependsAreFullyQualified(): void
     {
         $ids = $this->xpath->query(
-            "/config/system/section[@id='magedevgroup_admin_sso']"
+            "/config/system/section[@id='dmlab_admin_sso']"
             . "/group[@id='okta']/depends/field/@id"
         );
 
@@ -65,8 +65,8 @@ class SystemConfigTest extends TestCase
             $paths[] = $attr->value;
         }
 
-        self::assertContains('magedevgroup_admin_sso/general/enabled', $paths);
-        self::assertContains('magedevgroup_admin_sso/general/active_provider', $paths);
+        self::assertContains('dmlab_admin_sso/general/enabled', $paths);
+        self::assertContains('dmlab_admin_sso/general/active_provider', $paths);
         foreach ($paths as $path) {
             self::assertSame(3, count(explode('/', $path)), "Depend '$path' is not fully qualified.");
         }
@@ -80,7 +80,7 @@ class SystemConfigTest extends TestCase
     private function assertFieldMapsToPath(string $fieldId, string $expectedPath): void
     {
         $fields = $this->xpath->query(
-            "/config/system/section[@id='magedevgroup_admin_sso']"
+            "/config/system/section[@id='dmlab_admin_sso']"
             . "/group[@id='okta']/field[@id='" . $fieldId . "']"
         );
 

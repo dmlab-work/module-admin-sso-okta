@@ -1,12 +1,12 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSsoOkta\Test\Unit;
+namespace DmLab\AdminSsoOkta\Test\Unit;
 
-use MageDevGroup\AdminSsoOkta\Model\OktaPreset;
+use DmLab\AdminSsoOkta\Model\OktaPreset;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -15,7 +15,7 @@ use PHPUnit\Framework\TestCase;
  */
 class PresetRegistrationTest extends TestCase
 {
-    private const REGISTRY = 'MageDevGroup\\AdminSso\\Model\\PresetRegistry';
+    private const REGISTRY = 'DmLab\\AdminSso\\Model\\PresetRegistry';
 
     public function testDiXmlRegistersOktaPresetIntoPresetRegistry(): void
     {
