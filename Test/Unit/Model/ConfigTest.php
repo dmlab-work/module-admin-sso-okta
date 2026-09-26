@@ -1,12 +1,12 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSsoOkta\Test\Unit\Model;
+namespace DmLab\AdminSsoOkta\Test\Unit\Model;
 
-use MageDevGroup\AdminSsoOkta\Model\Config;
+use DmLab\AdminSsoOkta\Model\Config;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use PHPUnit\Framework\TestCase;
 

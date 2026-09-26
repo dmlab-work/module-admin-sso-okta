@@ -1,16 +1,16 @@
 <?xml version="1.0"?>
 <!--
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
     <!-- Open/closed seam: register the Okta preset into admin-sso's registry. -->
-    <type name="MageDevGroup\AdminSso\Model\PresetRegistry">
+    <type name="DmLab\AdminSso\Model\PresetRegistry">
         <arguments>
             <argument name="presets" xsi:type="array">
-                <item name="okta" xsi:type="object">MageDevGroup\AdminSsoOkta\Model\OktaPreset</item>
+                <item name="okta" xsi:type="object">DmLab\AdminSsoOkta\Model\OktaPreset</item>
             </argument>
         </arguments>
     </type>
