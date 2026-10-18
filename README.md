@@ -2,7 +2,8 @@
 
 > Okta login for the Magento 2 admin panel.
 
-![License](https://img.shields.io/badge/license-OSL--3.0-green) ![Magento](https://img.shields.io/badge/Magento-2.4-orange) ![PHP](https://img.shields.io/badge/PHP-8.3--8.5-blue) ![Version](https://img.shields.io/badge/version-0.0.1-lightgrey)
+[![CI](https://github.com/dmlab-work/module-admin-sso-okta/actions/workflows/ci.yml/badge.svg)](https://github.com/dmlab-work/module-admin-sso-okta/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/dmlab-work/module-admin-sso-okta/graph/badge.svg)](https://codecov.io/gh/dmlab-work/module-admin-sso-okta) [![Packagist](https://img.shields.io/packagist/dt/dmlab/module-admin-sso-okta)](https://packagist.org/packages/dmlab/module-admin-sso-okta)
+![License](https://img.shields.io/badge/license-OSL--3.0-green) ![Magento](https://img.shields.io/badge/Magento-2.4-orange) ![PHP](https://img.shields.io/badge/PHP-8.3--8.5-blue) ![Version](https://img.shields.io/badge/version-0.2.0-lightgrey)
 
 A thin Okta provider plugin for the provider-agnostic `admin-sso` capability. It supplies the Okta OIDC preset — discovery from your org domain, scopes, `groups` claim, login-button branding — while all OIDC protocol lives in `sso-core` and all admin logic in `admin-sso`. Installing it pulls `admin-sso` and `sso-core` automatically.
 
@@ -24,10 +25,18 @@ In the Okta Admin Console → **Applications → Create App Integration**:
    (`<admin-path>` is the backend frontName, default `admin`). It must match the
    admin URL used at runtime exactly.
 3. Save, then copy the **Client ID** and **Client secret**.
-4. **Groups claim** — for IdP-group → ACL-role mapping, add a `groups` claim to the
-   ID token: **Sign On → OpenID Connect ID Token → Groups claim**, filter e.g.
-   `Matches regex .*`. Without this Okta emits no groups and role mapping falls back
-   to the default role.
+4. **Groups claim** — for IdP-group → ACL-role mapping. Without it Okta emits no
+   groups and role mapping falls back to the default role.
+   - **Org server** (no Custom Authorization Server set): in the app, **Sign On →
+     OpenID Connect ID Token → Groups claim filter**, e.g. `Matches regex .*`. The
+     preset requests the `groups` scope.
+   - **Custom server**: **Security → API → Authorization Servers → `<server>` →
+     Claims** → add `groups` (token type ID Token, include Always, value type Groups,
+     filter e.g. `Matches regex .*`). The preset does not request the `groups` scope
+     there.
+
+Email adoption of an existing admin requires Okta's `email_verified=true`; an
+unverified primary email is never adopted.
 
 ## Configuration
 
@@ -46,7 +55,7 @@ Admin → Stores → Configuration → **DMLab → Admin SSO**.
 
 | Field | Value |
 |---|---|
-| Org Domain | your org domain, e.g. `dev-123.okta.com` (scheme optional, `https` assumed) |
+| Org Domain | your org domain, e.g. `dev-123.okta.com` — `https` only (scheme optional; `http://` rejected) |
 | Custom Authorization Server | optional server id (e.g. `default`); empty = org server |
 
 The discovery URL is derived from these:
@@ -61,6 +70,7 @@ that module's README.
 
 - Magento **2.4.x**
 - PHP **8.3 – 8.5**
+- `dmlab/module-admin-sso` / `dmlab/module-sso-core` **^0.2** (installed automatically)
 
 ## Part of the DMLab identity suite
 

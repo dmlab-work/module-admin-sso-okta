@@ -1,6 +1,7 @@
 <?php
 /**
  * Copyright © DMLab. All rights reserved.
+ * Licensed under the Open Software License version 3.0 (OSL-3.0). See LICENSE.
  */
 declare(strict_types=1);
 
@@ -13,6 +14,7 @@ use DmLab\AdminSso\Model\Oidc\AuthorizationStarter;
 use DmLab\AdminSso\Model\PresetRegistry;
 use DmLab\AdminSsoOkta\Model\Config as OktaConfig;
 use DmLab\AdminSsoOkta\Model\OktaPreset;
+use DmLab\AdminSsoOkta\Model\OrgDomain;
 use DmLab\SsoCore\Api\AuthorizationStateStorageInterface;
 use DmLab\SsoCore\Model\Oidc\AuthorizationRequestFactory;
 use DmLab\SsoCore\Model\Oidc\DiscoveryClient;
@@ -58,7 +60,43 @@ class AcceptanceTest extends TestCase
 
     public function testOktaDrivesTheAuthorizationUrl(): void
     {
-        $registry = $this->registry();
+        [$url, $discoveryUrl] = $this->startAuthorization(null);
+
+        // The Okta preset resolved by the registry built the discovery URL.
+        self::assertSame(
+            'https://' . self::OKTA_DOMAIN . '/.well-known/openid-configuration',
+            $discoveryUrl
+        );
+
+        // The auth URL is anchored on the discovered endpoint and carries the
+        // Okta default scopes and client id.
+        self::assertStringStartsWith(self::AUTH_ENDPOINT . '?', $url);
+        self::assertStringContainsString('client_id=' . self::CLIENT_ID, $url);
+        self::assertSame('openid profile email groups', $this->scopeParam($url));
+        self::assertStringContainsString('code_challenge_method=S256', $url);
+        self::assertStringContainsString('redirect_uri=' . rawurlencode(self::CALLBACK_URL), $url);
+    }
+
+    public function testCustomAuthServerAuthorizationUrlOmitsGroupsScope(): void
+    {
+        [$url, $discoveryUrl] = $this->startAuthorization('default');
+
+        self::assertSame(
+            'https://' . self::OKTA_DOMAIN . '/oauth2/default/.well-known/openid-configuration',
+            $discoveryUrl
+        );
+        self::assertSame('openid profile email', $this->scopeParam($url));
+    }
+
+    /**
+     * Run admin-sso's authorization starter against the registered Okta preset.
+     *
+     * @param string|null $authServer stored custom authorization server id; null = org server
+     * @return array{0:string,1:string|null} authorization URL and the discovery URL requested
+     */
+    private function startAuthorization(?string $authServer): array
+    {
+        $registry = $this->registry($authServer);
         $capturedDiscoveryUrl = null;
 
         $discoveryClient = $this->createStub(DiscoveryClient::class);
@@ -86,44 +124,49 @@ class AcceptanceTest extends TestCase
 
         $url = $starter->start();
 
-        // The Okta preset resolved by the registry built the discovery URL.
-        self::assertSame(
-            'https://' . self::OKTA_DOMAIN . '/.well-known/openid-configuration',
-            $capturedDiscoveryUrl
-        );
+        return [$url, $capturedDiscoveryUrl];
+    }
 
-        // The auth URL is anchored on the discovered endpoint and carries the
-        // Okta default scopes and client id.
-        self::assertStringStartsWith(self::AUTH_ENDPOINT . '?', $url);
-        self::assertStringContainsString('client_id=' . self::CLIENT_ID, $url);
-        self::assertStringContainsString('scope=openid%20profile%20email%20groups', $url);
-        self::assertStringContainsString('code_challenge_method=S256', $url);
-        self::assertStringContainsString('redirect_uri=' . rawurlencode(self::CALLBACK_URL), $url);
+    /**
+     * Decoded `scope` query parameter of an authorization URL.
+     *
+     * @param string $url
+     */
+    private function scopeParam(string $url): string
+    {
+        parse_str((string)parse_url($url, PHP_URL_QUERY), $query);
+
+        return (string)($query['scope'] ?? '');
     }
 
     /**
      * PresetRegistry seeded with the Okta preset exactly as etc/di.xml wires it.
      */
-    private function registry(): PresetRegistry
+    private function registry(?string $authServer = null): PresetRegistry
     {
-        return new PresetRegistry(['okta' => $this->oktaPreset()]);
+        return new PresetRegistry(['okta' => $this->oktaPreset($authServer)]);
     }
 
     /**
      * Okta preset over a config whose org domain is set to {@see OKTA_DOMAIN}.
+     *
+     * @param string|null $authServer stored custom authorization server id
      */
-    private function oktaPreset(): OktaPreset
+    private function oktaPreset(?string $authServer): OktaPreset
     {
+        $values = [
+            OktaConfig::XML_PATH_DOMAIN => self::OKTA_DOMAIN,
+            OktaConfig::XML_PATH_AUTH_SERVER => $authServer,
+        ];
         $scopeConfig = $this->createStub(ScopeConfigInterface::class);
         $scopeConfig->method('getValue')->willReturnCallback(
-            static fn (string $path): ?string =>
-                $path === OktaConfig::XML_PATH_DOMAIN ? self::OKTA_DOMAIN : null
+            static fn (string $path): ?string => $values[$path] ?? null
         );
 
         $assetRepository = $this->createStub(AssetRepository::class);
         $assetRepository->method('getUrl')->willReturn('https://magento.loc/static/okta.svg');
 
-        return new OktaPreset(new OktaConfig($scopeConfig), $assetRepository);
+        return new OktaPreset(new OktaConfig($scopeConfig), new OrgDomain(), $assetRepository);
     }
 
     /**

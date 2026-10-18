@@ -1,6 +1,7 @@
 <?php
 /**
  * Copyright © DMLab. All rights reserved.
+ * Licensed under the Open Software License version 3.0 (OSL-3.0). See LICENSE.
  */
 declare(strict_types=1);
 
@@ -8,9 +9,11 @@ namespace DmLab\AdminSsoOkta\Test\Unit\Model;
 
 use DmLab\AdminSsoOkta\Model\Config;
 use DmLab\AdminSsoOkta\Model\OktaPreset;
+use DmLab\AdminSsoOkta\Model\OrgDomain;
 use DmLab\SsoCore\Api\ProviderPresetInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\View\Asset\Repository as AssetRepository;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class OktaPresetTest extends TestCase
@@ -40,7 +43,7 @@ class OktaPresetTest extends TestCase
                 static fn (string $fileId) => 'https://magento.loc/static/' . $fileId
             );
 
-        return new OktaPreset(new Config($scopeConfig), $assetRepository);
+        return new OktaPreset(new Config($scopeConfig), new OrgDomain(), $assetRepository);
     }
 
     public function testImplementsProviderPresetContract(): void
@@ -54,12 +57,51 @@ class OktaPresetTest extends TestCase
         self::assertSame('Okta', $this->preset->getLabel());
     }
 
-    public function testDefaultScopesIncludeOpenidAndGroups(): void
+    public function testOrgServerScopesIncludeGroups(): void
     {
         self::assertSame(
             ['openid', 'profile', 'email', 'groups'],
             $this->preset->getDefaultScopes()
         );
+    }
+
+    public function testCustomServerScopesOmitGroups(): void
+    {
+        $preset = $this->preset([Config::XML_PATH_AUTH_SERVER => 'default']);
+
+        self::assertSame(['openid', 'profile', 'email'], $preset->getDefaultScopes());
+    }
+
+    public function testSlashOnlyAuthServerCountsAsOrgServer(): void
+    {
+        $preset = $this->preset([Config::XML_PATH_AUTH_SERVER => '/']);
+
+        self::assertContains('groups', $preset->getDefaultScopes());
+    }
+
+    /**
+     * `email` carries `email_verified`, needed for email adoption on both server types.
+     *
+     * @return array<string,array{array<string,mixed>}>
+     */
+    public static function serverTypes(): array
+    {
+        return [
+            'org server' => [[]],
+            'custom server' => [[Config::XML_PATH_AUTH_SERVER => 'default']],
+        ];
+    }
+
+    /**
+     * @param array<string,mixed> $storeValues
+     */
+    #[DataProvider('serverTypes')]
+    public function testOpenidAndEmailRequestedForEveryServerType(array $storeValues): void
+    {
+        $scopes = $this->preset($storeValues)->getDefaultScopes();
+
+        self::assertContains('openid', $scopes);
+        self::assertContains('email', $scopes);
     }
 
     public function testGroupsClaimIsGroups(): void
@@ -107,6 +149,29 @@ class OktaPresetTest extends TestCase
             'https://dev-123.okta.com/oauth2/default/.well-known/openid-configuration',
             $url
         );
+    }
+
+    public function testDiscoveryUrlTrimsSlashesAroundAuthServer(): void
+    {
+        self::assertSame(
+            'https://dev-123.okta.com/oauth2/default/.well-known/openid-configuration',
+            $this->preset->buildDiscoveryUrl(['domain' => 'dev-123.okta.com', 'auth_server' => '/default/'])
+        );
+    }
+
+    public function testDiscoveryUrlEncodesInnerSlashInAuthServer(): void
+    {
+        self::assertSame(
+            'https://dev-123.okta.com/oauth2/aus%2F..%2Fx/.well-known/openid-configuration',
+            $this->preset->buildDiscoveryUrl(['domain' => 'dev-123.okta.com', 'auth_server' => 'aus/../x'])
+        );
+    }
+
+    public function testSlashWrappedAuthServerCountsAsCustomServer(): void
+    {
+        $preset = $this->preset([Config::XML_PATH_AUTH_SERVER => '/default/']);
+
+        self::assertNotContains('groups', $preset->getDefaultScopes());
     }
 
     public function testDiscoveryUrlIgnoresBlankAuthServer(): void
@@ -171,5 +236,27 @@ class OktaPresetTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->preset->buildDiscoveryUrl(['domain' => '   ']);
+    }
+
+    public function testDiscoveryUrlRejectsExplicitHttpDomain(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->preset->buildDiscoveryUrl(['domain' => 'http://dev-123.okta.com']);
+    }
+
+    public function testDiscoveryUrlRejectsStoredHttpDomain(): void
+    {
+        $preset = $this->preset([Config::XML_PATH_DOMAIN => 'http://dev-123.okta.com']);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $preset->buildDiscoveryUrl([]);
+    }
+
+    public function testDiscoveryUrlKeepsPort(): void
+    {
+        self::assertSame(
+            'https://dev-123.okta.com:8443/.well-known/openid-configuration',
+            $this->preset->buildDiscoveryUrl(['domain' => 'dev-123.okta.com:8443'])
+        );
     }
 }
