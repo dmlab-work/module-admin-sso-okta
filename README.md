@@ -67,7 +67,7 @@ that module's README.
 
 ## Requirements
 
-- Magento **2.4.x**
+- Magento **2.4.x** (tested on 2.4.9)
 - PHP **8.3 – 8.5**
 - `dmlab/module-admin-sso` / `dmlab/module-sso-core` **^0.2** (installed automatically)
 
