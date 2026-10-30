@@ -59,6 +59,33 @@ class ComposerTest extends TestCase
         }
     }
 
+    public function testRequireConstraints(): void
+    {
+        self::assertSame(
+            [
+                'php' => '~8.2.0||~8.3.0||~8.4.0||~8.5.0',
+                'magento/framework' => '^103.0.7',
+                'magento/module-config' => '^101.2.7',
+                'dmlab/module-admin-sso' => '^0.2.0',
+                'dmlab/module-sso-core' => '^0.2.0',
+            ],
+            $this->composer['require']
+        );
+    }
+
+    public function testRequireDevConstraints(): void
+    {
+        self::assertSame(['phpunit/phpunit' => '^11.5||^12.5'], $this->composer['require-dev']);
+    }
+
+    public function testKeywordsAreDeclared(): void
+    {
+        self::assertIsArray($this->composer['keywords'] ?? null);
+        self::assertContains('magento2', $this->composer['keywords']);
+        self::assertContains('okta', $this->composer['keywords']);
+        self::assertArrayNotHasKey('suggest', $this->composer);
+    }
+
     public function testMetadataIsDeclared(): void
     {
         self::assertSame([['name' => 'DMLab', 'homepage' => 'https://dmlab.work']], $this->composer['authors']);
