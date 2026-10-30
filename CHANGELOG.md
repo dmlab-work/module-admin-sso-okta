@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1
+
+- Requires Magento 2.4.7+ and PHP 8.2–8.5: `magento/framework` `^103.0.7`, `magento/module-config` `^101.2.7`.
+- CI runs PHP 8.2–8.5 and no longer notifies Packagist on install.
+- composer.json: keywords.
+- README: plain intro, screenshot, install and Okta setup first; plugin detail under Architecture.
+
 ## 0.2.0
 
 - **Org domain must be `https`**: `http://` and other schemes, paths, queries, fragments and userinfo are rejected on save and at login. Bare hosts get `https://`; the host is lowercased and `:443` dropped so it matches Okta's issuer.
