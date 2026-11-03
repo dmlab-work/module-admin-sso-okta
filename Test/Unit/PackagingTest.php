@@ -76,9 +76,9 @@ class PackagingTest extends TestCase
         $composer = json_decode((string)file_get_contents($root . '/composer.json'), true, flags: JSON_THROW_ON_ERROR);
         $changelog = (string)file_get_contents($root . '/CHANGELOG.md');
 
-        self::assertSame('0.2.1', $composer['version'] ?? null);
+        self::assertSame('0.2.2', $composer['version'] ?? null);
         self::assertSame(1, preg_match('/^## (\S+)$/m', $changelog, $first));
-        self::assertSame('0.2.1', $first[1]);
+        self::assertSame('0.2.2', $first[1]);
     }
 
     private function readme(): string

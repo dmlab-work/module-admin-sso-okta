@@ -66,8 +66,8 @@ class ComposerTest extends TestCase
                 'php' => '~8.2.0||~8.3.0||~8.4.0||~8.5.0',
                 'magento/framework' => '^103.0.7',
                 'magento/module-config' => '^101.2.7',
-                'dmlab/module-admin-sso' => '^0.2.0',
-                'dmlab/module-sso-core' => '^0.2.0',
+                'dmlab/module-admin-sso' => '^0.2.0||^0.3.0',
+                'dmlab/module-sso-core' => '^0.2.0||^0.3.0',
             ],
             $this->composer['require']
         );
